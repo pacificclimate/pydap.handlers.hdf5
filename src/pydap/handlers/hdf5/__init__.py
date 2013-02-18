@@ -149,7 +149,10 @@ class Hdf5Data(object):
 
     @property
     def dtype(self):
-        return self.var.dtype    
+        return self.var.dtype
+    @property
+    def shape(self):
+        return self.var.shape
 
 if __name__ == "__main__":
     import sys
