@@ -38,18 +38,13 @@ class HDF5Handler(BaseHandler):
             raise Exception("Found %d unlimited dimensions %s, but DAP supports no more than one.")
         elif len(unlim) == 1:
             attrs.update({'DODS_EXTRA': {'Unlimited_Dimension': unlim.pop()}})
-            #self.dataset.attributes['DODS_EXTRA']['Unlimited_Dimension'] = unlim.pop()
 
         # build dataset
         name = os.path.split(filepath)[1]
-        #self.dataset = DatasetType(name, attributes={'NC_GLOBAL': []})#, attributes=dict(NC_GLOBAL=self.fp.attrs)) FIXME: fix dtype issue for 'DIMENSION_LIST'
         self.dataset = DatasetType(name, attributes=attrs)
 
         def is_gridded(dst):
             return sum([len(dim) for dim in dst.dims]) > 0
-
-        #def is_unlimited(dist):
-        #    return None in dst.maxshape
 
         def add_variables(dataset, h5, level=0):
             assert type(h5) in (h5py.File, h5py.Group, h5py.Dataset)
@@ -62,9 +57,6 @@ class HDF5Handler(BaseHandler):
                 except:
                     print "Failed on", key
     
-            if 'geographic_wgs84' in name:
-                return
-            print '-' * level * 2 + name
             # struct
             if type(h5) in (h5py.File, h5py.Group):
                 foo = StructureType(name, attributes=attrs)
@@ -123,9 +115,6 @@ def process_attrs(attrs):
             rv[key] = val
         except:
             warn("Failed to convert attribute", key + ":" + val)
-
-#def process_attrs(attrs):
-#    {k: v in attrs.iteritems() if attrs[k] }
 
 class Hdf5Data(object):
     """
