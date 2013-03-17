@@ -121,13 +121,31 @@ class Hdf5Data(object):
     A wrapper for Hdf5 variables, ensuring support for iteration and the dtype
     property
     """
-    def __init__(self, var):
+    # FIXME: This is ridiculously slow
+    def __init__(self, var, index=[]):
         self.var = var
-        self.iter = iter(self.var)
+        self.index = index
 
-    def __getitem__(self, index): return self.var[index]
+        # Set up the iterartor
+        x = self.var
+        for i in self.index:
+            x = x.__getitem__(i)
+        try:
+            self.iter = iter(x)
+        except TypeError:
+            self.iter = x
+
+    # FIXME: this is horrible
+    def __getitem__(self, index):
+        #if not self.index:
+        print "Called __getitem__ on dataset", self.var.name, "with index", index, "total indexes", self.index + [index]
+        # FIXME: Check if the indexes are actually valid!
+        # FIXME: Apply the indexes to the correct dimensions!
+        return Hdf5Data(self.var, self.index + [index])
+
     def __iter__(self):
         return self
+
     def next(self):
         try:
             return self.iter.next()
@@ -139,9 +157,20 @@ class Hdf5Data(object):
     @property
     def dtype(self):
         return self.var.dtype
+
     @property
     def shape(self):
-        return self.var.shape
+        myshape = self.var.shape
+        for slice_ in self.index:
+            myshape = sliced_shape(slice_, myshape)
+        return myshape
+
+def sliced_shape(slice_, shape_):
+    if not isinstance(slice_, tuple): slice_ = (slice_,)
+    assert len(slice_) == len(shape_)
+    rv = [ len(range(s.start, s.stop, s.step)) for s in slice_ ]
+    print 'returning', rv
+    return tuple(rv)
 
 if __name__ == "__main__":
     import sys
