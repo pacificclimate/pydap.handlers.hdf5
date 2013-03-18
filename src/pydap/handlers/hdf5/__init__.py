@@ -165,6 +165,13 @@ class Hdf5Data(object):
             myshape = sliced_shape(slice_, myshape)
         return myshape
 
+    def byteswap(self):
+        x = self.var
+        for i in self.index:
+            x = x.__getitem__(i)
+        return x.byteswap()
+        
+
 def sliced_shape(slice_, shape_):
     if not isinstance(slice_, tuple): slice_ = (slice_,)
     assert len(slice_) == len(shape_)
