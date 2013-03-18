@@ -31,7 +31,7 @@ class HDF5Handler(BaseHandler):
         self.additional_headers.append(
                 ('Last-modified', (formatdate(time.mktime(time.localtime(os.stat(filepath)[ST_MTIME]))))))
 
-        attrs = {'NC_GLOBAL': []}
+        attrs = {'NC_GLOBAL': process_attrs(self.fp.attrs)}
 
         unlim = find_unlimited(self.fp)
         if len(unlim) > 1:
@@ -49,13 +49,7 @@ class HDF5Handler(BaseHandler):
         def add_variables(dataset, h5, level=0):
             assert type(h5) in (h5py.File, h5py.Group, h5py.Dataset)
             name = h5.name.lstrip('/')
-            attrs = {}
-            for key in h5.attrs.keys():
-                try:
-                    REVERSE(h5.attrs.get(key).dtype) # This will raise Exception of the type is not convertable
-                    attrs[key] = h5.attrs.get(key)
-                except:
-                    print "Failed on", key
+            attrs = process_attrs(h5.attrs)
     
             # struct
             if type(h5) in (h5py.File, h5py.Group):
@@ -109,12 +103,13 @@ def find_unlimited(h5):
 def process_attrs(attrs):
     rv = {}
     for key in attrs.keys():
-        val = attrs.get(key)
         try:
+            val = attrs.get(key) # Potentially raises TypeError: No NumPy equivalent for TypeVlenID exists
             REVERSE(val.dtype) # This will raise Exception of the type is not convertable
             rv[key] = val
         except:
-            warn("Failed to convert attribute", key + ":" + val)
+            warn("Failed to convert attribute " + key)
+    return rv
 
 class Hdf5Data(object):
     """
@@ -137,8 +132,6 @@ class Hdf5Data(object):
 
     # FIXME: this is horrible
     def __getitem__(self, index):
-        #if not self.index:
-        print "Called __getitem__ on dataset", self.var.name, "with index", index, "total indexes", self.index + [index]
         # FIXME: Check if the indexes are actually valid!
         # FIXME: Apply the indexes to the correct dimensions!
         return Hdf5Data(self.var, self.index + [index])
@@ -176,7 +169,6 @@ def sliced_shape(slice_, shape_):
     if not isinstance(slice_, tuple): slice_ = (slice_,)
     assert len(slice_) == len(shape_)
     rv = [ len(range(s.start, s.stop, s.step)) for s in slice_ ]
-    print 'returning', rv
     return tuple(rv)
 
 if __name__ == "__main__":
