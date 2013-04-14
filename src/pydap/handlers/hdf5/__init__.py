@@ -6,95 +6,72 @@ from email.utils import formatdate
 
 import numpy as np
 
-from pupynere import netcdf_file
+import h5py
 
 from pydap.model import *
 from pydap.handlers.lib import BaseHandler
 from pydap.exceptions import OpenFileError
 
 
-class NetCDFHandler(BaseHandler):
+class HDF5Handler(BaseHandler):
 
-    extensions = re.compile(r"^.*\.(nc|cdf)$", re.IGNORECASE)
+    extensions = re.compile(r"^.*\.(h5|hdf5)$", re.IGNORECASE)
 
     def __init__(self, filepath):
         BaseHandler.__init__(self)
 
         try:
-            self.fp = netcdf_file(filepath)
+            self.fp = h5py.File(filepath, 'r')
         except Exception, exc:
             message = 'Unable to open file %s: %s' % (filepath, exc)
             raise OpenFileError(message)
 
         self.additional_headers.append(
-                ('Last-modified', (formatdate(time.mktime(time.localtime(os.stat(filepath)[ST_MTIME]))))))
-
-        # shortcuts
-        vars = self.fp.variables
-        dims = self.fp.dimensions
+            ('Last-modified', (formatdate(time.mktime(time.localtime( os.stat(
+                filepath)[ST_MTIME]))))))
 
         # build dataset
         name = os.path.split(filepath)[1]
-        self.dataset = DatasetType(name, attributes=dict(NC_GLOBAL=self.fp._attributes))
-        for dim in dims:
-            if dims[dim] is None:
-                self.dataset.attributes['DODS_EXTRA'] = {'Unlimited_Dimension': dim}
-                break
+        self.dataset = DatasetType(name, attributes={
+            "NC_GLOBAL": dict(self.fp.attrs),
+        })
 
-        # add grids
-        grids = [var for var in vars if var not in dims]
-        for grid in grids:
-            self.dataset[grid] = GridType(grid, vars[grid]._attributes)
-            # add array
-            self.dataset[grid][grid] = BaseType(grid, NetcdfData(vars[grid]),
-                    vars[grid].dimensions, vars[grid]._attributes)
-            # add maps
-            for dim in vars[grid].dimensions:
-                self.dataset[grid][dim] = BaseType(dim, vars[dim][:],
-                        None, vars[dim]._attributes)
+        if self.fp.attrs.get('Map Projection') == 'Equidistant Cylindrical':
+            lat_bnds = np.linspace(
+                self.fp.attrs['Northernmost Latitude'],
+                self.fp.attrs['Southernmost Latitude'],
+                self.fp.attrs['Number of Lines']+1)
+            lat = (lat_bnds[:-1] + lat_bnds[1:])/2.
+            lon_bnds = np.linspace(
+                self.fp.attrs['Westernmost Longitude'],
+                self.fp.attrs['Easternmost Longitude'],
+                self.fp.attrs['Number of Columns']+1)
+            lon = (lon_bnds[:-1] + lon_bnds[1:])/2.
+            dims = lat, lon
+        else:
+            dims = None
 
-        # add dims
-        for dim in dims:
-            self.dataset[dim] = BaseType(dim, vars[dim][:],
-                    None, vars[dim]._attributes)
+        for name in self.fp:
+            if dims and self.fp[name].shape == (len(lat), len(lon)):
+                g = self.dataset[name] = GridType(name, dict(self.fp[name].attrs))
+                g[name] = BaseType(name, self.fp[name], ('lat', 'lon'),
+                    dict(self.fp[name].attrs))
+                g['lat'] = BaseType('lat', dims[0], None,
+                    dict(axis='Y', units='degrees_north'))
+                g['lon'] = BaseType('lon', dims[1], None,
+                    dict(axis='X', units='degrees_east'))
+            else:
+                self.dataset[name] = BaseType(name, self.fp[name], None,
+                    dict(self.fp[name].attrs))
 
-    def close(self):
-        self.fp.close()
-
-
-class NetcdfData(object):
-    """
-    A wrapper for Netcdf variables, making them behave more like Numpy arrays.
-
-    """
-    def __init__(self, var):
-        self.var = var
-
-    @property
-    def dtype(self):
-        return np.dtype(self.var.typecode())
-
-    @property
-    def shape(self):
-        return self.var.shape
-
-    # Comparisons are passed to the data.
-    def __eq__(self, other): return self.var[:] == other
-    def __ne__(self, other): return self.var[:] != other
-    def __ge__(self, other): return self.var[:] >= other
-    def __le__(self, other): return self.var[:] <= other
-    def __gt__(self, other): return self.var[:] > other
-    def __lt__(self, other): return self.var[:] < other
-
-    # Implement the sequence and iter protocols.
-    def __getitem__(self, index): return self.var[index]
-    def __len__(self): return self.shape[0]
-    def __iter__(self): return iter(self.var[:])    
+        if dims:
+            self.dataset['lat'] = g['lat']
+            self.dataset['lon'] = g['lon']
 
 
 if __name__ == "__main__":
     import sys
     from werkzeug.serving import run_simple
 
-    application = NetCDFHandler(sys.argv[1])
+    application = HDF5Handler(sys.argv[1])
     run_simple('localhost', 8001, application, use_reloader=True)
