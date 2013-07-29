@@ -6,7 +6,7 @@ README = open(os.path.join(here, 'README.rst')).read()
 NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 
 
-version = '0.1a1'
+version = '0.2'
 
 install_requires = [
     'h5py'
@@ -36,6 +36,6 @@ setup(name='pydap.handlers.hdf5',
     install_requires=install_requires,
     entry_points="""
         [pydap.handler]
-        netcdf = pydap.handlers.hdf5:HDF5Handler
+        hdf5 = pydap.handlers.hdf5:HDF5Handler
     """,
 )
