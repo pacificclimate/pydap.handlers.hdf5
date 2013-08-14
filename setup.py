@@ -9,10 +9,8 @@ NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 version = '0.2'
 
 install_requires = [
-    'h5py'
-    # List your project dependencies here.
-    # For more details, see:
-    # http://packages.python.org/distribute/setuptools.html#declaring-dependencies
+    'h5py',
+    'pupynere >=1.1.2a1'
 ]
 
 

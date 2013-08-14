@@ -7,7 +7,6 @@ from itertools import islice
 from warnings import warn
 from logging import info, debug, warning
 
-import numpy as np
 import h5py
 from pupynere import REVERSE
 
