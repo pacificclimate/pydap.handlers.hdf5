@@ -182,6 +182,9 @@ class Hdf5Data(object):
 
 def sliced_shape(slice_, shape_):
     if not isinstance(slice_, tuple): slice_ = (slice_,)
+    import pdb
+    #if len(slice_) != len(shape_):
+        #    pdb.set_trace()
     assert len(slice_) == len(shape_)
     rv = [ sh if sl == slice(None) else len(range(sl.start, sl.stop, sl.step)) for sl, sh in zip(slice_, shape_) ]
     return tuple(rv)
