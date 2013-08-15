@@ -10,7 +10,8 @@ version = '0.2'
 
 install_requires = [
     'h5py',
-    'pupynere >=1.1.2a1'
+    'pupynere >=1.1.2a1',
+    'pydap ==3.2.1'
 ]
 
 
