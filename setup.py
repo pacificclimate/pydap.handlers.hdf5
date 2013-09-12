@@ -10,10 +10,11 @@ version = '0.2'
 
 install_requires = [
     'h5py',
-    'pupynere >=1.1.2a1',
-    'pydap ==3.2.1'
+    'pupynere >=1.1.2a2',
+    'pydap >=3.2.1'
 ]
 
+sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/software'
 
 setup(name='pydap.handlers.hdf5',
     version=version,
@@ -26,6 +27,8 @@ setup(name='pydap.handlers.hdf5',
     author='James Hiebert',
     author_email='james@hiebert.name',
     url='http://pydap.org/handlers.html#hdf5',
+    dependency_links = ['{0}/Pydap-3.2@3.2.1#egg=Pydap-3.2.1'.format(sw_path),
+                        '{0}/pupynere@1.1.2a2#egg=pupynere-1.1.2a2'.format(sw_path)],
     license='MIT',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
