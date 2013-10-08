@@ -39,5 +39,6 @@ setup(name='pydap.handlers.hdf5',
     entry_points="""
         [pydap.handler]
         hdf5 = pydap.handlers.hdf5:HDF5Handler
+        nc = pydap.handlers.hdf5:HDF5Handler
     """,
 )
