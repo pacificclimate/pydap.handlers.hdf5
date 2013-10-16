@@ -117,33 +117,43 @@ class Hdf5Data(object):
     A wrapper for Hdf5 variables, ensuring support for iteration and the dtype
     property
     """
-    def __init__(self, var, index=slice(None)):
+    def __init__(self, var, slices=None):
         self.var = var
-        debug('%s', index)
+        debug('%s', slices)
 
-        if index:
-            if not isinstance(index, tuple): index = (index,)
-            self.major_slice = index[0]
-            try:
-                self.index = index[1:] # which _might_ be ()
-            except TypeError:
-                self.index = slice(None)
+        rank = len(var.shape)
+        assert rank > 0
+
+        if not slices:
+            self._slices = [ slice(None) for i in range(rank) ]
         else:
-            self.major_slice = slice(var.shape[0])
-            self.index = slice(None)
+            assert len(slices) == rank
+            self._slices = slices
 
+        self._major_slice = self._slices[0]
+        if rank > 1:
+            self._minor_slices = self._slices[1:]
+        else:
+            self._minor_slices = None
+            
         # Set up the iterator
-        if len(self.var.shape) > 1 or None in self.var.maxshape:
-            self.iter = islice(iter(self.var), self.major_slice.start, self.major_slice.stop, self.major_slice.step)
+        if rank > 1 or None in self.var.maxshape:
+            self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
         else:
             self.iter = iter([self.var])
 
         debug('end Hdf5Data.__init__()')
 
-    def __getitem__(self, index):
-        if self.index:
-            raise NotImplementedError("Haven't yet implemented a subset of a subset")
-        return Hdf5Data(self.var, index)
+    def __getitem__(self, slices):
+        # for a 1d slice, there will (should) only be one slice
+        if type(slices) == slice:
+            slices = (slices,)
+        for slice_ in self._slices:
+            if slice_ != slice(None):
+                raise NotImplementedError("Haven't yet implemented a subset of a subset")
+        if len(slices) != len(self.shape):
+            raise ValueError("dataset has {0} dimensions, but the slice has {1} dimensions".format(len(slices), len(self.shape)))
+        return Hdf5Data(self.var, slices)
 
     def __iter__(self):
         debug('returning from __iter__')
@@ -152,12 +162,12 @@ class Hdf5Data(object):
     def next(self):
         try:
             x = self.iter.next()
-            if self.index:
-                return x[self.index]
+            if self._minor_slices:
+                return x[self._minor_slices]
             else:
                 return x
         except StopIteration:
-            self.iter = islice(iter(self.var), self.major_slice.start, self.major_slice.stop, self.major_slice.step)
+            self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
             raise
 
     def __len__(self): return self.var.shape[0]
@@ -168,24 +178,19 @@ class Hdf5Data(object):
 
     @property
     def shape(self):
-        debug("in shape with major_slice=%s and index=%s", self.major_slice, self.index)
+        debug("in shape with major_slice=%s and slices=%s", self._major_slice, self._slices)
         myshape = self.var.shape
-        myshape = sliced_shape((self.major_slice,) + self.index, myshape)
+        myshape = sliced_shape(self._slices, myshape)
         debug("leaving shape with result %s", myshape)
         return myshape
 
     def byteswap(self):
-        x = self.var.__getitem__((self.major_slice,) + self.index)
+        x = self.var.__getitem__(self._slices)
         return x.byteswap()
-        
 
 def sliced_shape(slice_, shape_):
-    if not isinstance(slice_, tuple): slice_ = (slice_,)
-    import pdb
-    #if len(slice_) != len(shape_):
-        #    pdb.set_trace()
     assert len(slice_) == len(shape_)
-    rv = [ sh if sl == slice(None) else len(range(sl.start, sl.stop, sl.step)) for sl, sh in zip(slice_, shape_) ]
+    rv = [ sh if sl == slice(None) else len(range(sh)[sl]) for sl, sh in zip(slice_, shape_) ]
     return tuple(rv)
 
 if __name__ == "__main__":

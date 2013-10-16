@@ -1,12 +1,22 @@
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
 import sys, os
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = ['-v', '--tb=no']
+        self.test_suite = True
+    def run_tests(self):
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
 
-version = '0.2'
+version = '0.3'
 
 install_requires = [
     'h5py',
@@ -33,6 +43,7 @@ setup(name='pydap.handlers.hdf5',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
     namespace_packages = ['pydap', 'pydap.handlers'],
+    package_data={'': ['pydap/handlers/hdf5/data/*.h5']},
     include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
@@ -41,4 +52,6 @@ setup(name='pydap.handlers.hdf5',
         hdf5 = pydap.handlers.hdf5:HDF5Handler
         nc = pydap.handlers.hdf5:HDF5Handler
     """,
+    tests_require=['pytest', 'numpy'],
+    cmdclass = {'test': PyTest},
 )
