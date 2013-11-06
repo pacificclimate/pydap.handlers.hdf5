@@ -4,8 +4,7 @@ import time
 from stat import ST_MTIME
 from email.utils import formatdate
 from itertools import islice
-from warnings import warn
-from logging import info, debug, warning
+import logging
 
 import h5py
 from pupynere import REVERSE
@@ -15,6 +14,8 @@ from pydap.handlers.lib import BaseHandler
 from pydap.exceptions import OpenFileError
 
 from pdb import set_trace
+
+logger = logging.getLogger(__name__)
 
 class HDF5Handler(BaseHandler):
 
@@ -109,7 +110,7 @@ def process_attrs(attrs):
             REVERSE(val.dtype) # This will raise Exception of the type is not convertable
             rv[key] = val
         except:
-            warn("Failed to convert attribute " + key)
+            logger.warning("Failed to convert attribute " + key)
     return rv
 
 class Hdf5Data(object):
@@ -119,7 +120,7 @@ class Hdf5Data(object):
     """
     def __init__(self, var, slices=None):
         self.var = var
-        debug('%s', slices)
+        logger.debug('%s', slices)
 
         rank = len(var.shape)
         assert rank > 0
@@ -142,7 +143,7 @@ class Hdf5Data(object):
         else:
             self.iter = iter([self.var])
 
-        debug('end Hdf5Data.__init__()')
+        logger.debug('end Hdf5Data.__init__()')
 
     def __getitem__(self, slices):
         # for a 1d slice, there will (should) only be one slice
@@ -156,7 +157,7 @@ class Hdf5Data(object):
         return Hdf5Data(self.var, slices)
 
     def __iter__(self):
-        debug('returning from __iter__')
+        logger.debug('returning from __iter__')
         return self
 
     def next(self):
@@ -178,10 +179,10 @@ class Hdf5Data(object):
 
     @property
     def shape(self):
-        debug("in shape with major_slice=%s and slices=%s", self._major_slice, self._slices)
+        logger.debug("in shape with major_slice=%s and slices=%s", self._major_slice, self._slices)
         myshape = self.var.shape
         myshape = sliced_shape(self._slices, myshape)
-        debug("leaving shape with result %s", myshape)
+        logger.debug("leaving shape with result %s", myshape)
         return myshape
 
     def byteswap(self):
