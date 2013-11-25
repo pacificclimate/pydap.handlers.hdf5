@@ -1,4 +1,8 @@
-import pytest
+from pkg_resources import resource_filename
+
+import h5py
+import numpy
+from webob.request import Request
 
 from pydap.handlers.hdf5 import Hdf5Data
 
@@ -46,3 +50,21 @@ def test_shape_of_sliced_1d(hdf5data_instance_1d):
     x = hdf5data_instance_1d
     assert x[5:10].shape == (5,)
 
+# Unless 1d variables are of unlimited dimensions, you should get all of their output on the first iteration in a numpy array
+def test_1d_iteration(hdf5data_instance_1d):
+    x = hdf5data_instance_1d
+    for i in iter(x):
+        if hdf5data_instance_1d.var.maxshape == (None,):
+            assert type(i) == numpy.float64
+        else:
+            assert type(i) == numpy.ndarray
+            assert len(i) == len(hdf5data_instance_1d.var)
+    
+def test_the_bounds():
+    test_bounds = resource_filename('pydap.handlers.hdf5', 'data/bounds.h5')
+    from pydap.handlers.hdf5 import HDF5Handler
+    app = HDF5Handler(test_bounds)
+    req = Request.blank('/bounds.nc.ascii?climatology_bounds')
+    resp = req.get_response(app)
+    assert resp.status == '200 OK'
+    print resp.body

@@ -3,7 +3,7 @@ import re
 import time
 from stat import ST_MTIME
 from email.utils import formatdate
-from itertools import islice
+from itertools import islice, imap
 import logging
 
 import h5py
@@ -12,8 +12,6 @@ from pupynere import REVERSE
 from pydap.model import DatasetType, StructureType, SequenceType, GridType, BaseType
 from pydap.handlers.lib import BaseHandler
 from pydap.exceptions import OpenFileError
-
-from pdb import set_trace
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +71,8 @@ class HDF5Handler(BaseHandler):
             # grid
             elif is_gridded(h5):
                 parent = dataset[name] = GridType(name, attributes=attrs)
-                dims = tuple([ d.keys()[0] for d in h5.dims ])
+                dims = tuple([ d.values()[0].name.lstrip('/') for d in h5.dims ])
+                logger.debug("DIMENSIONS: {}".format(dims))
                 parent[name] = BaseType(name, data=Hdf5Data(h5), dimensions=dims, attributes=attrs) # Add the main variable
                 for dim in h5.dims: # and all of the dimensions
                     add_variables(parent, dim[0], level+1) # Why would dims have more than one h5py.Dataset?
@@ -136,15 +135,20 @@ class Hdf5Data(object):
             self._minor_slices = self._slices[1:]
         else:
             self._minor_slices = None
-            
-        # Set up the iterator
-        if rank > 1 or None in self.var.maxshape:
-            self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
-        else:
-            self.iter = iter([self.var])
+
+        self._init_iter()
 
         logger.debug('end Hdf5Data.__init__()')
 
+    def _init_iter(self):
+        '''Initialize the iterator'''
+        rank = len(self.var.shape)
+        if rank > 1 or None in self.var.maxshape:
+            self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
+        else:
+            self.iter = imap(lambda x: x[self._major_slice.start:self._major_slice.stop:self._major_slice.step], [self.var])
+
+        
     def __getitem__(self, slices):
         # for a 1d slice, there will (should) only be one slice
         if type(slices) == slice:
@@ -168,7 +172,7 @@ class Hdf5Data(object):
             else:
                 return x
         except StopIteration:
-            self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
+            self._init_iter()
             raise
 
     def __len__(self): return self.var.shape[0]
