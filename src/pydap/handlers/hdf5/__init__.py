@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class HDF5Handler(BaseHandler):
 
-    extensions = re.compile(r"^.*(nc?|\.h(df)?[45]?)$", re.IGNORECASE)
+    extensions = re.compile(r"^.*(\.nc4?|\.h(df)?[45]?)$", re.IGNORECASE)
 
     def __init__(self, filepath):
         BaseHandler.__init__(self)
