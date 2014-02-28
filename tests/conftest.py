@@ -9,7 +9,7 @@ from pydap.handlers.hdf5 import Hdf5Data
 
 test_h5 = resource_filename('pydap.handlers.hdf5', 'data/test.h5')
 
-@pytest.fixture(scope="module", params=['/tasmax', '/tasmin', '/pr'])
+@pytest.fixture(scope="function", params=['/tasmax', '/tasmin', '/pr'])
 def hdf5data_instance_3d(request):
     f = h5py.File(test_h5, 'r')
     dst = f[request.param]

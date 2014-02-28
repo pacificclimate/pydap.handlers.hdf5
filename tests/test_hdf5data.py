@@ -59,6 +59,11 @@ def test_1d_iteration(hdf5data_instance_1d):
         else:
             assert type(i) == numpy.ndarray
             assert len(i) == len(hdf5data_instance_1d.var)
+
+def test_can_slice_a_sliced_dataset(hdf5data_instance_3d):
+    x = hdf5data_instance_3d
+    subset = x[5:10,:,:][1:2,:,:]
+    assert subset.shape == (1, 10, 10)
     
 def test_the_bounds():
     test_bounds = resource_filename('pydap.handlers.hdf5', 'data/bounds.h5')

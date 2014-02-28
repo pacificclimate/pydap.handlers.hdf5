@@ -16,7 +16,7 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)
 
-version = '0.3'
+version = '0.5'
 
 install_requires = [
     'h5py',

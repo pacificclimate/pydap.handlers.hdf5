@@ -12,6 +12,7 @@ from pupynere import REVERSE
 from pydap.model import DatasetType, StructureType, SequenceType, GridType, BaseType
 from pydap.handlers.lib import BaseHandler
 from pydap.exceptions import OpenFileError
+from stack_slice import StackableSlice as ss
 
 logger = logging.getLogger(__name__)
 
@@ -125,10 +126,10 @@ class Hdf5Data(object):
         assert rank > 0
 
         if not slices:
-            self._slices = [ slice(None) for i in range(rank) ]
+            self._slices = [ ss(None) for i in range(rank) ]
         else:
             assert len(slices) == rank
-            self._slices = slices
+            self._slices = [ ss(s.start, s.stop, s.step) for s in slices ]
 
         self._major_slice = self._slices[0]
         if rank > 1:
@@ -151,14 +152,26 @@ class Hdf5Data(object):
         
     def __getitem__(self, slices):
         # for a 1d slice, there will (should) only be one slice
-        if type(slices) == slice:
+        if type(slices) in (slice, ss):
             slices = (slices,)
-        for slice_ in self._slices:
-            if slice_ != slice(None):
-                raise NotImplementedError("Haven't yet implemented a subset of a subset")
+
+        # convert all regular slices into stackable slices for the addition
+        converted_slices = []
+        for s in slices:
+            if type(s) == ss:
+                converted_slices.append(s)
+            elif type(s) in (slice, int):
+                converted_slices.append(ss(s))
+            else:
+                raise TypeError("__getitem__ should be called with a list of slices (or StackableSlices), not {}".format( [type(s) for s in slices ]))
+        slices = converted_slices
+
         if len(slices) != len(self.shape):
             raise ValueError("dataset has {0} dimensions, but the slice has {1} dimensions".format(len(slices), len(self.shape)))
-        return Hdf5Data(self.var, slices)
+
+        subset_slices = [ orig_slice + subset_slice for orig_slice, subset_slice in zip(self._slices, slices) ]
+
+        return Hdf5Data(self.var, subset_slices)
 
     def __iter__(self):
         logger.debug('returning from __iter__')
@@ -168,7 +181,9 @@ class Hdf5Data(object):
         try:
             x = self.iter.next()
             if self._minor_slices:
-                return x[self._minor_slices]
+                # Can't actually index with sequence of stackable slices... convert to slices
+                minor_slices = [ s.slice for s in self._minor_slices ]
+                return x[ minor_slices ]
             else:
                 return x
         except StopIteration:
@@ -185,7 +200,8 @@ class Hdf5Data(object):
     def shape(self):
         logger.debug("in shape with major_slice=%s and slices=%s", self._major_slice, self._slices)
         myshape = self.var.shape
-        myshape = sliced_shape(self._slices, myshape)
+        true_slices = [ s.slice for s in self._slices ]
+        myshape = sliced_shape(true_slices, myshape)
         logger.debug("leaving shape with result %s", myshape)
         return myshape
 
