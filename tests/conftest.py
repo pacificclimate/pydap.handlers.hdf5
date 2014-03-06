@@ -21,12 +21,6 @@ def hdf5data_instance_1d(request):
     dst = f[request.param]
     return Hdf5Data(dst)
 
-# @pytest.fixture(scope="module")
-# def hdf5data_instance_1d():
-#     f = h5py.File('./src/pydap/handlers/hdf5/data/test.h5', 'r')
-#     dst = f['/time']
-#     return Hdf5Data(dst)
-
 # _All_ the variables should be iterable
 @pytest.fixture(scope="module", params=['/tasmax', '/tasmin', '/pr', '/lat', '/lon', '/time'])
 def hdf5data_iterable(request):

@@ -120,13 +120,13 @@ class Hdf5Data(object):
     """
     def __init__(self, var, slices=None):
         self.var = var
-        logger.debug('%s', slices)
+        logger.debug('Hdf5Data.__init__({}, {})'.format(var, slices))
 
         rank = len(var.shape)
         assert rank > 0
 
         if not slices:
-            self._slices = [ ss(None) for i in range(rank) ]
+            self._slices = [ ss(None, None, None) for i in range(rank) ]
         else:
             assert len(slices) == rank
             self._slices = [ ss(s.start, s.stop, s.step) for s in slices ]
@@ -151,17 +151,26 @@ class Hdf5Data(object):
 
         
     def __getitem__(self, slices):
+        logger.debug('HDF5Data({}.__getitem({})'.format(self.var, slices))
         # for a 1d slice, there will (should) only be one slice
-        if type(slices) in (slice, ss):
+        if type(slices) == int:
+            slices = (slice(slices),)
+        elif type(slices) in (slice, ss):
             slices = (slices,)
+        elif type(slices) == tuple:
+            pass
+        else:
+            raise TypeError()
 
         # convert all regular slices into stackable slices for the addition
         converted_slices = []
         for s in slices:
             if type(s) == ss:
                 converted_slices.append(s)
-            elif type(s) in (slice, int):
+            elif type(s) == int:
                 converted_slices.append(ss(s))
+            elif type(s) == slice:
+                converted_slices.append(ss(s.start, s.stop, s.step))
             else:
                 raise TypeError("__getitem__ should be called with a list of slices (or StackableSlices), not {}".format( [type(s) for s in slices ]))
         slices = converted_slices
@@ -198,7 +207,7 @@ class Hdf5Data(object):
 
     @property
     def shape(self):
-        logger.debug("in shape with major_slice=%s and slices=%s", self._major_slice, self._slices)
+        logger.debug("HDF5Data({}).shape : major_slice={} and slices={}".format(self.var, self._major_slice, self._slices))
         myshape = self.var.shape
         true_slices = [ s.slice for s in self._slices ]
         myshape = sliced_shape(true_slices, myshape)

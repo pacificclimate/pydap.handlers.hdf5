@@ -1,9 +1,15 @@
 class StackableSlice(object):
     def __init__(self, *args):
+        for arg in args:
+            assert type(arg) == int or arg == None
+
         self.slice = slice(*args)
 
     def __repr__(self):
         return 'StackableSlice({}, {}, {})'.format(self.start, self.stop, self.step)
+
+    def __str__(self):
+        return 'StackableSlice({}:{}:{})'.format(self.start, self.stop, self.step)
 
     def __add__(self, other):
         '''other is either a StackableSlice or a slice'''
