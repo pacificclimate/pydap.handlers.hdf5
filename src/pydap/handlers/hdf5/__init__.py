@@ -143,8 +143,7 @@ class Hdf5Data(object):
 
     def _init_iter(self):
         '''Initialize the iterator'''
-        rank = len(self.var.shape)
-        if rank > 1 or None in self.var.maxshape:
+        if self.rank > 1 or None in self.var.maxshape:
             self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
         else:
             self.iter = imap(lambda x: x[self._major_slice.start:self._major_slice.stop:self._major_slice.step], [self.var])
@@ -152,13 +151,18 @@ class Hdf5Data(object):
         
     def __getitem__(self, slices):
         logger.debug('HDF5Data({}.__getitem({})'.format(self.var, slices))
-        # for a 1d slice, there will (should) only be one slice
+        # There are three types of acceptable keys...
+        # A single integer
         if type(slices) == int:
-            slices = (slice(slices),)
+            slices = (ss(slices, slices+1, 1),)
+        # A single slice for a 1d dataset
         elif type(slices) in (slice, ss):
+            assert self.rank == 1
             slices = (slices,)
+        # A tuple of slices where the number of elements in the tuple equals the number of dimensions in the dataset
         elif type(slices) == tuple:
-            pass
+            if len(slices) != self.rank:
+                raise ValueError("dataset has {0} dimensions, but the slice has {1} dimensions".format(len(slices), self.rank))
         else:
             raise TypeError()
 
@@ -168,15 +172,12 @@ class Hdf5Data(object):
             if type(s) == ss:
                 converted_slices.append(s)
             elif type(s) == int:
-                converted_slices.append(ss(s))
+                converted_slices.append(ss(s, s+1, 1))
             elif type(s) == slice:
                 converted_slices.append(ss(s.start, s.stop, s.step))
             else:
                 raise TypeError("__getitem__ should be called with a list of slices (or StackableSlices), not {}".format( [type(s) for s in slices ]))
         slices = converted_slices
-
-        if len(slices) != len(self.shape):
-            raise ValueError("dataset has {0} dimensions, but the slice has {1} dimensions".format(len(slices), len(self.shape)))
 
         subset_slices = [ orig_slice + subset_slice for orig_slice, subset_slice in zip(self._slices, slices) ]
 
@@ -213,6 +214,10 @@ class Hdf5Data(object):
         myshape = sliced_shape(true_slices, myshape)
         logger.debug("leaving shape with result %s", myshape)
         return myshape
+
+    @property
+    def rank(self):
+        return len(self.shape)
 
     def byteswap(self):
         x = self.var.__getitem__(self._slices)
