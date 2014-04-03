@@ -185,7 +185,7 @@ class Hdf5Data(object):
 
     def __iter__(self):
         logger.debug('returning from __iter__')
-        return self
+        return Hdf5Data(self.var, self._slices)
 
     def next(self):
         try:
