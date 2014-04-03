@@ -12,7 +12,7 @@ from pupynere import REVERSE
 from pydap.model import DatasetType, StructureType, SequenceType, GridType, BaseType
 from pydap.handlers.lib import BaseHandler
 from pydap.exceptions import OpenFileError
-from stack_slice import StackableSlice as ss
+from .stack_slice import StackableSlice
 
 logger = logging.getLogger(__name__)
 
@@ -126,10 +126,10 @@ class Hdf5Data(object):
         assert rank > 0
 
         if not slices:
-            self._slices = [ ss(None, None, None) for i in range(rank) ]
+            self._slices = [ StackableSlice(None, None, None) for i in range(rank) ]
         else:
             assert len(slices) == rank
-            self._slices = [ ss(s.start, s.stop, s.step) for s in slices ]
+            self._slices = [ StackableSlice(s.start, s.stop, s.step) for s in slices ]
 
         self._major_slice = self._slices[0]
         if rank > 1:
@@ -154,9 +154,9 @@ class Hdf5Data(object):
         # There are three types of acceptable keys...
         # A single integer
         if type(slices) == int:
-            slices = (ss(slices, slices+1, 1),)
+            slices = (StackableSlice(slices, slices+1, 1),)
         # A single slice for a 1d dataset
-        elif type(slices) in (slice, ss):
+        elif type(slices) in (slice, StackableSlice):
             assert self.rank == 1
             slices = (slices,)
         # A tuple of slices where the number of elements in the tuple equals the number of dimensions in the dataset
@@ -169,12 +169,12 @@ class Hdf5Data(object):
         # convert all regular slices into stackable slices for the addition
         converted_slices = []
         for s in slices:
-            if type(s) == ss:
+            if type(s) == StackableSlice:
                 converted_slices.append(s)
             elif type(s) == int:
-                converted_slices.append(ss(s, s+1, 1))
+                converted_slices.append(StackableSlice(s, s+1, 1))
             elif type(s) == slice:
-                converted_slices.append(ss(s.start, s.stop, s.step))
+                converted_slices.append(StackableSlice(s.start, s.stop, s.step))
             else:
                 raise TypeError("__getitem__ should be called with a list of slices (or StackableSlices), not {}".format( [type(s) for s in slices ]))
         slices = converted_slices
