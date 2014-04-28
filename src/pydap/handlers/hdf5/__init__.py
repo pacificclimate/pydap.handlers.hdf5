@@ -160,7 +160,7 @@ class Hdf5Data(object):
             assert self.rank == 1
             slices = (slices,)
         # A tuple of slices where the number of elements in the tuple equals the number of dimensions in the dataset
-        elif type(slices) == tuple:
+        elif type(slices) in (tuple, list):
             if len(slices) != self.rank:
                 raise ValueError("dataset has {0} dimensions, but the slice has {1} dimensions".format(len(slices), self.rank))
         else:
@@ -222,6 +222,11 @@ class Hdf5Data(object):
     def byteswap(self):
         x = self.var.__getitem__(self._slices)
         return x.byteswap()
+
+    def astype(self, type_):
+        slices = tuple([ ss.slice for ss in self._slices ])
+        x = self.var.__getitem__(slices)
+        return x.astype(type_)
 
 def sliced_shape(slice_, shape_):
     assert len(slice_) == len(shape_)
