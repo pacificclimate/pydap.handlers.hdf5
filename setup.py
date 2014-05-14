@@ -9,7 +9,7 @@ NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = ['-v', '--tb=no']
+        self.test_args = ['-v', '--tb=no', 'tests']
         self.test_suite = True
     def run_tests(self):
         import pytest
@@ -24,8 +24,6 @@ install_requires = [
     'pydap >=3.2.1'
 ]
 
-sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/software'
-
 setup(name='pydap.handlers.hdf5',
     version=version,
     description="HDF5 handler for Pydap",
@@ -37,8 +35,8 @@ setup(name='pydap.handlers.hdf5',
     author='James Hiebert',
     author_email='james@hiebert.name',
     url='http://pydap.org/handlers.html#hdf5',
-    dependency_links = ['{0}/Pydap-3.2@3.2.1#egg=Pydap-3.2.1'.format(sw_path),
-                        '{0}/pupynere@912821570233#egg=pupynere-1.1.2a2'.format(sw_path)],
+    dependency_links = ['https://github.com/pacificclimate/pydap-pdp/tarball/master#egg=Pydap-3.2.2',
+                        'https://github.com/pacificclimate/pupynere-pdp/tarball/master#egg=pupynere-1.1.2a2'],
     license='MIT',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
