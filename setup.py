@@ -20,8 +20,8 @@ version = '0.5'
 
 install_requires = [
     'h5py',
-    'pupynere >=1.1.2a2',
-    'pydap >=3.2.1'
+    'pupynere_pdp >=1.1.2a2',
+    'pydap_pdp >=3.2.1'
 ]
 
 setup(name='pydap.handlers.hdf5',
@@ -35,8 +35,6 @@ setup(name='pydap.handlers.hdf5',
     author='James Hiebert',
     author_email='james@hiebert.name',
     url='http://pydap.org/handlers.html#hdf5',
-    dependency_links = ['https://github.com/pacificclimate/pydap-pdp/tarball/master#egg=Pydap-3.2.2',
-                        'https://github.com/pacificclimate/pupynere-pdp/tarball/master#egg=pupynere-1.1.2a2'],
     license='MIT',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
