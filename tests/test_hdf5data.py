@@ -72,4 +72,21 @@ def test_the_bounds():
     req = Request.blank('/bounds.nc.ascii?climatology_bounds')
     resp = req.get_response(app)
     assert resp.status == '200 OK'
-    print resp.body
+    assert resp.body == '''climatology_bounds.climatology_bounds
+[0.0, 10988.0]
+[31.0, 11017.0]
+[59.0, 11048.0]
+[90.0, 11078.0]
+[120.0, 11109.0]
+[151.0, 11139.0]
+[181.0, 11170.0]
+[212.0, 11201.0]
+[243.0, 11231.0]
+[273.0, 11262.0]
+[304.0, 11292.0]
+[334.0, 11323.0]
+[0.0, 11323.0]
+climatology_bounds.time
+climatology_bounds.bnds
+[0.0, 0.0]
+'''
