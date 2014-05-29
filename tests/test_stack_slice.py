@@ -1,6 +1,6 @@
 import pytest
 
-from stack_slice import StackableSlice
+from pydap.handlers.hdf5.stack_slice import StackableSlice
 
 ss = StackableSlice
 @pytest.mark.parametrize(('slice_zero','slice_one','expected_output'), [
