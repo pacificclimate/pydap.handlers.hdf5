@@ -1,2 +1,3 @@
 include README.rst
 include NEWS.txt
+include src/pydap/handlers/hdf5/data/*.h5
