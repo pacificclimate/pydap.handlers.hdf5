@@ -143,12 +143,11 @@ class Hdf5Data(object):
 
     def _init_iter(self):
         '''Initialize the iterator'''
-        if self.rank > 1 or None in self.var.maxshape:
-            self.iter = islice(iter(self.var), self._major_slice.start, self._major_slice.stop, self._major_slice.step)
+        if self._major_slice.start:
+            self.pos = self._major_slice.start
         else:
-            self.iter = imap(lambda x: x[self._major_slice.start:self._major_slice.stop:self._major_slice.step], [self.var])
+            self.pos = 0
 
-        
     def __getitem__(self, slices):
         logger.debug('HDF5Data({}.__getitem({})'.format(self.var, slices))
         # There are three types of acceptable keys...
@@ -188,17 +187,20 @@ class Hdf5Data(object):
         return Hdf5Data(self.var, self._slices)
 
     def next(self):
-        try:
-            x = self.iter.next()
+        stop = self._major_slice.stop if self._major_slice.stop else self.var.shape[0]
+        step = self._major_slice.step if self._major_slice.step else 1
+        if self.pos < stop:
+            x = self.var[self.pos]
+            self.pos += step
             if self._minor_slices:
                 # Can't actually index with sequence of stackable slices... convert to slices
                 minor_slices = [ s.slice for s in self._minor_slices ]
                 return x[ minor_slices ]
             else:
                 return x
-        except StopIteration:
+        else:
             self._init_iter()
-            raise
+            raise StopIteration
 
     def __len__(self): return self.var.shape[0]
 
