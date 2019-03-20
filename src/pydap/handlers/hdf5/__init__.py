@@ -190,6 +190,13 @@ class Hdf5Data(object):
         stop = self._major_slice.stop if self._major_slice.stop else self.var.shape[0]
         step = self._major_slice.step if self._major_slice.step else 1
         if self.pos < stop:
+
+            # Special case: for 1d variables, non-record variables return
+            # output on the first iteration in a single numpy array
+            if self.rank == 1 and self.var.maxshape != (None,):
+                self.pos = float('inf')
+                return self.var[:]
+
             x = self.var[self.pos]
             self.pos += step
             if self._minor_slices:
