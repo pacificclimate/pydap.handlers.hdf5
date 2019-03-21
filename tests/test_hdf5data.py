@@ -9,7 +9,6 @@ from pydap.handlers.hdf5 import Hdf5Data
 def test_can_instantiate(hdf5_dst):
     var = Hdf5Data(hdf5_dst)
     assert var.shape == (10, 10, 10)
-    assert var.iter
 
 def test_can_iterate_on_unsliced(hdf5data_iterable):
     for data in hdf5data_iterable:
@@ -50,7 +49,8 @@ def test_shape_of_sliced_1d(hdf5data_instance_1d):
     x = hdf5data_instance_1d
     assert x[5:10].shape == (5,)
 
-# Unless 1d variables are of unlimited dimensions, you should get all of their output on the first iteration in a numpy array
+# Unless 1d variables are of unlimited dimensions, you should get all of their
+# output on the first iteration in a numpy array
 def test_1d_iteration(hdf5data_instance_1d):
     x = hdf5data_instance_1d
     for i in iter(x):
