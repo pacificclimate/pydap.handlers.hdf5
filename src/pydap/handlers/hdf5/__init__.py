@@ -195,7 +195,7 @@ class Hdf5Data(object):
             # output on the first iteration in a single numpy array
             if self.rank == 1 and self.var.maxshape != (None,):
                 self.pos = float('inf')
-                return self.var[:]
+                return self.var[self._major_slice.slice]
 
             x = self.var[self.pos]
             self.pos += step
