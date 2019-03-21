@@ -16,12 +16,12 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)
 
-version = '0.5.1'
+version = '0.5.2'
 
 install_requires = [
     'h5py',
-    'pupynere_pdp >=1.1.3',
-    'pydap_pdp >=3.2.1'
+    'pupynere_pdp >=1.1.4',
+    'pydap_pdp >=3.2.6'
 ]
 
 setup(name='pydap.handlers.hdf5',
